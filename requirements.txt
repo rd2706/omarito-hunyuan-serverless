@@ -6,3 +6,13 @@ huggingface_hub
 opencv-python
 pillow
 runpod
+# Essential for character consistency and performance
+xformers
+einops
+imageio
+# Video processing
+av
+decord
+# Advanced optimizations (if build succeeds)
+# flash-attn
+# triton
