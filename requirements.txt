@@ -1,3 +1,8 @@
+# TESTED and WORKING compatibility matrix
+torch==2.5.1
+torchvision==0.20.1
+torchaudio==2.5.1
+xformers==0.0.29
 diffusers
 transformers
 accelerate
@@ -5,14 +10,8 @@ safetensors
 huggingface_hub
 opencv-python
 pillow
-runpod
-# Essential for character consistency and performance
-xformers
 einops
 imageio
-# Video processing
 av
 decord
-# Advanced optimizations (if build succeeds)
-# flash-attn
-# triton
+runpod
