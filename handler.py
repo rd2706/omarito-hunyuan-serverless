@@ -27,22 +27,37 @@ def load_models():
         # Import with torch 2.5.1 compatibility
         import torch
         import os
+        import gc
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
+        os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+        
+        # Clear GPU cache before loading
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            gc.collect()
+            print(f"🧹 GPU memory cleared. Available: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
         
         try:
             from diffusers import HunyuanVideoPipeline
             
-            # Load with PyTorch 2.5.1 compatible settings
-            print("📦 Loading model with PyTorch 2.5.1 compatibility...")
+            # Load with PyTorch 2.5.1 compatible settings + memory optimization
+            print("📦 Loading model with memory optimization...")
             pipe = HunyuanVideoPipeline.from_pretrained(
                 "hunyuanvideo-community/HunyuanVideo",
                 torch_dtype=torch.bfloat16,  # Use bfloat16 for better compatibility
                 device_map="auto",
                 trust_remote_code=True,
-                low_cpu_mem_usage=True
+                low_cpu_mem_usage=True,
+                # Memory optimizations
+                variant="fp16",  # Use smaller variant if available
+                use_safetensors=True
             )
             
-            print("✅ HunyuanVideo loaded with PyTorch 2.5.1")
+            # Enable memory efficient attention
+            pipe.enable_attention_slicing(1)
+            pipe.enable_model_cpu_offload()
+            
+            print("✅ HunyuanVideo loaded with memory optimization")
             
         except Exception as e:
             print(f"❌ Error loading HunyuanVideo: {e}")
@@ -53,8 +68,11 @@ def load_models():
                     "hunyuanvideo-community/HunyuanVideo",
                     torch_dtype=torch.float16,
                     trust_remote_code=True,
-                    low_cpu_mem_usage=True
+                    low_cpu_mem_usage=True,
+                    use_safetensors=True
                 )
+                pipe.enable_attention_slicing(1)
+                pipe.enable_model_cpu_offload()
                 pipe = pipe.to("cuda")
                 print("✅ HunyuanVideo loaded (float16 fallback)")
             except Exception as e2:
@@ -118,21 +136,46 @@ def generate_video(job):
             generator=torch.Generator().manual_seed(42)
         )
         
-        # Get video tensor
-        video_tensor = result.frames[0]  # Shape: [frames, height, width, channels]
+        # Get video tensor - HunyuanVideo returns different format
+        if hasattr(result, 'frames'):
+            video_tensor = result.frames
+        elif hasattr(result, 'videos'):
+            video_tensor = result.videos
+        else:
+            # Fallback: try to get the video from result directly
+            video_tensor = result
+        
+        # Save to local VPS videos directory
+        videos_dir = "/home/reda/dev/runpod/videos"
+        os.makedirs(videos_dir, exist_ok=True)
+        
+        # Generate unique filename
+        import uuid
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        video_filename = f"omarito_{timestamp}_{uuid.uuid4().hex[:8]}.mp4"
+        video_path = f"{videos_dir}/{video_filename}"
         
         # Convert to video file (MP4)
-        video_path = "/tmp/generated_video.mp4"
         frames_to_video(video_tensor, video_path)
         
-        # Encode video to base64 for return
-        with open(video_path, "rb") as f:
-            video_b64 = base64.b64encode(f.read()).decode()
+        # Clear GPU memory after generation
+        del result
+        del video_tensor
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+            import gc
+            gc.collect()
         
-        print("✅ Video generation complete")
+        # Get file size
+        file_size_mb = os.path.getsize(video_path) / 1024 / 1024
+        
+        print(f"✅ Video saved to VPS: {video_path} ({file_size_mb:.1f} MB)")
         
         return {
-            "video_base64": video_b64,
+            "video_path": video_path,
+            "video_filename": video_filename,
+            "file_size_mb": round(file_size_mb, 1),
             "prompt": prompt,
             "settings": {
                 "steps": num_inference_steps,
@@ -152,12 +195,31 @@ def generate_video(job):
 def frames_to_video(frames_tensor, output_path, fps=8):
     """Convert tensor frames to MP4 video"""
     import cv2
+    import torch
     
-    # Convert tensor to numpy
-    frames = frames_tensor.cpu().numpy()
+    # Handle different output formats from HunyuanVideo
+    if isinstance(frames_tensor, list):
+        # If it's a list, take the first element
+        frames_tensor = frames_tensor[0]
+    
+    # Ensure it's a tensor and move to CPU
+    if isinstance(frames_tensor, torch.Tensor):
+        frames = frames_tensor.cpu().numpy()
+    else:
+        frames = np.array(frames_tensor)
+    
+    # Handle different tensor shapes
+    if len(frames.shape) == 5:  # [batch, frames, channels, height, width]
+        frames = frames[0]  # Take first batch
+        frames = frames.transpose(0, 2, 3, 1)  # [frames, height, width, channels]
+    elif len(frames.shape) == 4:  # [frames, channels, height, width]
+        frames = frames.transpose(0, 2, 3, 1)  # [frames, height, width, channels]
     
     # Normalize to 0-255
-    frames = (frames * 255).astype(np.uint8)
+    if frames.max() <= 1.0:
+        frames = (frames * 255).astype(np.uint8)
+    else:
+        frames = frames.astype(np.uint8)
     
     height, width = frames.shape[1:3]
     

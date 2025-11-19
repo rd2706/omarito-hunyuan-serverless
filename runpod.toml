@@ -1,0 +1,31 @@
+[project]
+name = "omarito-video-memory-opt"
+uuid = "tv0z0r3hjo8q2p"
+base_image = "pytorch/pytorch:2.4.0-cuda12.4-cudnn9-devel"
+cuda_version = "12.4"
+python_version = "3.12"
+
+[envs]
+PYTORCH_CUDA_ALLOC_CONF = "expandable_segments:True"
+
+[build]
+commands = [
+    "apt-get update && apt-get install -y ffmpeg git && rm -rf /var/lib/apt/lists/*",
+    "pip install --upgrade pip",
+    "pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 xformers==0.0.29 --index-url https://download.pytorch.org/whl/cu124",
+    "pip install -r requirements.txt"
+]
+
+[runtime]
+handler_path = "handler.py"
+handler_function = "generate_video"
+python_executable = "python3"
+
+[resources]
+min_idle = 0
+max_idle = 1
+idle_timeout = 5
+max_concurrent_requests = 1
+
+[storage]
+volume_size = 30
