@@ -17,8 +17,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download the base model to reduce cold start time
-RUN python -c "from diffusers import HunyuanVideoPipeline; HunyuanVideoPipeline.from_pretrained('hunyuanvideo-community/HunyuanVideo')"
+# Note: Base model will be downloaded on first inference to avoid build timeouts
 
 # Copy handler
 COPY handler.py .
