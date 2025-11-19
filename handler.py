@@ -63,6 +63,7 @@ def generate_video(job):
         width = job_input.get("width", 768)
         num_frames = job_input.get("frames", 49)
         lora_strength = job_input.get("lora_strength", 0.8)
+        reference_image = job_input.get("reference_image", None)  # Optional IP-Adapter
         
         print(f"🎬 Generating video: '{prompt}'")
         print(f"📐 Resolution: {width}x{height}, Frames: {num_frames}")
