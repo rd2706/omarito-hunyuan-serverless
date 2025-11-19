@@ -24,15 +24,33 @@ def load_models():
     if pipe is None:
         print("🔄 Loading HunyuanVideo model...")
         # Import here to avoid loading during container build
-        from diffusers import HunyuanVideoPipeline
-        
-        # Load base model
-        pipe = HunyuanVideoPipeline.from_pretrained(
-            "hunyuanvideo-community/HunyuanVideo",
-            torch_dtype=torch.float16,
-            device_map="auto"
-        )
-        print("✅ HunyuanVideo loaded")
+        try:
+            from diffusers import HunyuanVideoPipeline
+            
+            # Load base model with compatibility fixes
+            pipe = HunyuanVideoPipeline.from_pretrained(
+                "hunyuanvideo-community/HunyuanVideo",
+                torch_dtype=torch.float16,
+                trust_remote_code=True
+            )
+            
+            # Move to GPU
+            pipe = pipe.to("cuda")
+            print("✅ HunyuanVideo loaded")
+            
+        except Exception as e:
+            print(f"❌ Error loading HunyuanVideo: {e}")
+            # Fallback: try without specific dtype
+            try:
+                pipe = HunyuanVideoPipeline.from_pretrained(
+                    "hunyuanvideo-community/HunyuanVideo",
+                    trust_remote_code=True
+                )
+                pipe = pipe.to("cuda")
+                print("✅ HunyuanVideo loaded (fallback)")
+            except Exception as e2:
+                print(f"❌ Fallback failed: {e2}")
+                raise e2
     
     if not lora_loaded:
         print("🔄 Loading Omarito LoRA...")
