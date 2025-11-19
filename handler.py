@@ -95,8 +95,16 @@ def generate_video(job):
         print(f"🎬 Generating video: '{prompt}'")
         print(f"📐 Resolution: {width}x{height}, Frames: {num_frames}")
         
-        # Set LoRA strength
-        pipe.set_adapters(["default"], adapter_weights=[lora_strength])
+        # Set LoRA strength - use correct adapter name
+        try:
+            pipe.set_adapters(["default_0"], adapter_weights=[lora_strength])
+        except Exception as e:
+            print(f"⚠️ Adapter error, trying fallback: {e}")
+            # Fallback: try default or skip adapter setting
+            try:
+                pipe.set_adapters(["default"], adapter_weights=[lora_strength])
+            except:
+                print("⚠️ Using pipeline without adapter strength setting")
         
         # Generate video
         result = pipe(
