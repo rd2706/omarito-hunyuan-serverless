@@ -23,33 +23,42 @@ def load_models():
     
     if pipe is None:
         print("🔄 Loading HunyuanVideo model...")
-        # Import here to avoid loading during container build
+        
+        # Import with torch 2.5.1 compatibility
+        import torch
+        import os
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
+        
         try:
             from diffusers import HunyuanVideoPipeline
             
-            # Load base model with compatibility fixes
+            # Load with PyTorch 2.5.1 compatible settings
+            print("📦 Loading model with PyTorch 2.5.1 compatibility...")
             pipe = HunyuanVideoPipeline.from_pretrained(
                 "hunyuanvideo-community/HunyuanVideo",
-                torch_dtype=torch.float16,
-                trust_remote_code=True
+                torch_dtype=torch.bfloat16,  # Use bfloat16 for better compatibility
+                device_map="auto",
+                trust_remote_code=True,
+                low_cpu_mem_usage=True
             )
             
-            # Move to GPU
-            pipe = pipe.to("cuda")
-            print("✅ HunyuanVideo loaded")
+            print("✅ HunyuanVideo loaded with PyTorch 2.5.1")
             
         except Exception as e:
             print(f"❌ Error loading HunyuanVideo: {e}")
-            # Fallback: try without specific dtype
+            # Fallback with different precision
             try:
+                print("🔄 Trying fallback with float16...")
                 pipe = HunyuanVideoPipeline.from_pretrained(
                     "hunyuanvideo-community/HunyuanVideo",
-                    trust_remote_code=True
+                    torch_dtype=torch.float16,
+                    trust_remote_code=True,
+                    low_cpu_mem_usage=True
                 )
                 pipe = pipe.to("cuda")
-                print("✅ HunyuanVideo loaded (fallback)")
+                print("✅ HunyuanVideo loaded (float16 fallback)")
             except Exception as e2:
-                print(f"❌ Fallback failed: {e2}")
+                print(f"❌ All fallbacks failed: {e2}")
                 raise e2
     
     if not lora_loaded:
