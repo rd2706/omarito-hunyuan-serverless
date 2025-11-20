@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:2.4.0-cuda12.4-cudnn9-devel
+FROM nvidia/pytorch:24.11-py3
 
 WORKDIR /app
 
@@ -8,10 +8,9 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch with broader CUDA support for H100/A100 80GB GPUs
+# Upgrade pip and install xformers (PyTorch already included in base image)
 RUN pip install --upgrade pip
-RUN pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu121
-RUN pip install xformers --index-url https://download.pytorch.org/whl/cu121
+RUN pip install xformers
 
 # Install remaining dependencies
 COPY requirements.txt .
