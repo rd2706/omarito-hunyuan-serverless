@@ -8,9 +8,9 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch with CUDA 12.8 for RTX 6000 Ada support (sm_89)
+# Install PyTorch 2.7.1 with CUDA 12.8 for RTX 6000 Ada support (sm_89)
 RUN pip install --upgrade pip
-RUN pip install -U torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu128
+RUN pip install torch==2.7.1 torchvision==0.22.1 torchaudio==2.7.1 --index-url https://download.pytorch.org/whl/cu128
 RUN pip install xformers
 
 # Install remaining dependencies
