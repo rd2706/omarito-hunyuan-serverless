@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/pytorch:24.08-py3
+FROM pytorch/pytorch:2.4.0-cuda12.4-cudnn9-devel
 
 WORKDIR /app
 
@@ -8,8 +8,9 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip and install xformers (PyTorch already included in base image)
+# Install PyTorch nightly with RTX 6000 Ada support
 RUN pip install --upgrade pip
+RUN pip install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu124
 RUN pip install xformers
 
 # Install remaining dependencies
