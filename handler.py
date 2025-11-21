@@ -136,14 +136,26 @@ def generate_video(job):
             generator=torch.Generator().manual_seed(42)
         )
         
-        # Get video tensor - HunyuanVideo returns different format
-        if hasattr(result, 'frames'):
+        # Get video tensor - HunyuanVideo returns HunyuanVideoPipelineOutput
+        print(f"🔍 Debug: result type: {type(result)}")
+        print(f"🔍 Debug: result attributes: {dir(result)}")
+        
+        if hasattr(result, 'frames') and result.frames is not None:
             video_tensor = result.frames
-        elif hasattr(result, 'videos'):
+            print(f"🔍 Debug: Using result.frames, type: {type(video_tensor)}")
+        elif hasattr(result, 'videos') and result.videos is not None:
             video_tensor = result.videos
+            print(f"🔍 Debug: Using result.videos, type: {type(video_tensor)}")
+        elif isinstance(result, (list, tuple)) and len(result) > 0:
+            video_tensor = result[0]  # Take first element if it's a tuple/list
+            print(f"🔍 Debug: Using result[0], type: {type(video_tensor)}")
         else:
-            # Fallback: try to get the video from result directly
+            print(f"🔍 Debug: Using result directly, type: {type(result)}")
             video_tensor = result
+            
+        print(f"🔍 Debug: Final video_tensor type: {type(video_tensor)}")
+        if hasattr(video_tensor, 'shape'):
+            print(f"🔍 Debug: video_tensor shape: {video_tensor.shape}")
         
         # Save to local VPS videos directory
         videos_dir = "/home/reda/dev/runpod/videos"
