@@ -157,9 +157,8 @@ def generate_video(job):
         if hasattr(video_tensor, 'shape'):
             print(f"🔍 Debug: video_tensor shape: {video_tensor.shape}")
         
-        # Save to local VPS videos directory
-        videos_dir = "/home/reda/dev/runpod/videos"
-        os.makedirs(videos_dir, exist_ok=True)
+        # Save to worker's temporary directory
+        videos_dir = "/tmp"
         
         # Generate unique filename
         import uuid
@@ -182,11 +181,15 @@ def generate_video(job):
         # Get file size
         file_size_mb = os.path.getsize(video_path) / 1024 / 1024
         
-        print(f"✅ Video saved to VPS: {video_path} ({file_size_mb:.1f} MB)")
+        # Read video file and encode as base64 for download
+        with open(video_path, "rb") as video_file:
+            video_base64 = base64.b64encode(video_file.read()).decode('utf-8')
+        
+        print(f"✅ Video generated: {video_filename} ({file_size_mb:.1f} MB)")
         
         return {
-            "video_path": video_path,
             "video_filename": video_filename,
+            "video_base64": video_base64,
             "file_size_mb": round(file_size_mb, 1),
             "prompt": prompt,
             "settings": {
