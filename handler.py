@@ -89,17 +89,15 @@ def load_models():
                 raise e2
     
     if not lora_loaded:
-        print("🔄 Loading Omarito LoRA...")
-        # Download LoRA from your HuggingFace repo
-        lora_path = hf_hub_download(
-            repo_id="Rd2706/omarito-hunyuan-video-lora",
-            filename="omarito_lora.safetensors"
-        )
-        
-        # Load LoRA weights
-        pipe.load_lora_weights(lora_path)
+        print("⚠️ DEBUGGING: Skipping LoRA for black video troubleshooting")
+        # Skip LoRA loading to test base model
+        # lora_path = hf_hub_download(
+        #     repo_id="Rd2706/omarito-hunyuan-video-lora",
+        #     filename="omarito_lora.safetensors"
+        # )
+        # pipe.load_lora_weights(lora_path)
         lora_loaded = True
-        print("✅ Omarito LoRA loaded")
+        print("⚠️ Base model only (no LoRA)")
 
 def generate_video(job):
     """Main inference function"""
@@ -119,19 +117,11 @@ def generate_video(job):
         lora_strength = job_input.get("lora_strength", 0.8)
         reference_image = job_input.get("reference_image", None)  # Optional IP-Adapter
         
-        print(f"🎬 Generating video: '{prompt}'")
+        print(f"🎬 Generating video (BASE MODEL ONLY): '{prompt}'")
         print(f"📐 Resolution: {width}x{height}, Frames: {num_frames}")
         
-        # Set LoRA strength - use correct adapter name
-        try:
-            pipe.set_adapters(["default_0"], adapter_weights=[lora_strength])
-        except Exception as e:
-            print(f"⚠️ Adapter error, trying fallback: {e}")
-            # Fallback: try default or skip adapter setting
-            try:
-                pipe.set_adapters(["default"], adapter_weights=[lora_strength])
-            except:
-                print("⚠️ Using pipeline without adapter strength setting")
+        # Skip LoRA adapter settings for debugging
+        print("⚠️ DEBUGGING: No LoRA adapters will be used")
         
         # Generate video
         result = pipe(
