@@ -229,12 +229,17 @@ def frames_to_video(frames_tensor, output_path, fps=8):
         frames = frames[0]  # Take first batch: [num_frames, channels, height, width]
         print(f"🔍 Debug: After batch selection: {frames.shape}")
     
-    # Now we should have [num_frames, channels, height, width] -> [num_frames, height, width, channels]
-    if len(frames.shape) == 4 and frames.shape[1] == 3:  # [num_frames, 3, height, width]
-        frames = frames.transpose(0, 2, 3, 1)  # -> [num_frames, height, width, 3]
-        print(f"🔍 Debug: After transpose: {frames.shape}")
+    # Check if already in correct format: [num_frames, height, width, channels]
+    if len(frames.shape) == 4:
+        if frames.shape[3] == 3:  # [num_frames, height, width, 3] - already correct!
+            print(f"🔍 Debug: Tensor already in correct format: {frames.shape}")
+        elif frames.shape[1] == 3:  # [num_frames, 3, height, width] - needs transpose
+            frames = frames.transpose(0, 2, 3, 1)  # -> [num_frames, height, width, 3]
+            print(f"🔍 Debug: After transpose: {frames.shape}")
+        else:
+            raise ValueError(f"Unexpected frame tensor shape: {frames.shape}")
     else:
-        raise ValueError(f"Unexpected frame tensor shape: {frames.shape}")
+        raise ValueError(f"Expected 4D tensor, got shape: {frames.shape}")
     
     # Validate we have correct shape for OpenCV
     if len(frames.shape) != 4 or frames.shape[3] != 3:
