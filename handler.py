@@ -193,14 +193,15 @@ def generate_video(job):
         }
 
 def frames_to_video(frames_tensor, output_path, fps=8):
-    """Convert tensor frames to MP4 video"""
+    """Convert HunyuanVideo tensor frames to MP4 video"""
     import cv2
     import torch
     
-    # Handle different output formats from HunyuanVideo
+    print(f"🔍 Debug: frames_tensor type: {type(frames_tensor)}")
+    
+    # Handle HunyuanVideo output format: (batch_size, num_frames, channels, height, width)
     if isinstance(frames_tensor, list):
-        # If it's a list, take the first element
-        frames_tensor = frames_tensor[0]
+        frames_tensor = frames_tensor[0]  # Take first batch from list
     
     # Ensure it's a tensor and move to CPU
     if isinstance(frames_tensor, torch.Tensor):
@@ -208,32 +209,59 @@ def frames_to_video(frames_tensor, output_path, fps=8):
     else:
         frames = np.array(frames_tensor)
     
-    # Handle different tensor shapes
-    if len(frames.shape) == 5:  # [batch, frames, channels, height, width]
-        frames = frames[0]  # Take first batch
-        frames = frames.transpose(0, 2, 3, 1)  # [frames, height, width, channels]
-    elif len(frames.shape) == 4:  # [frames, channels, height, width]
-        frames = frames.transpose(0, 2, 3, 1)  # [frames, height, width, channels]
+    print(f"🔍 Debug: Initial frames shape: {frames.shape}")
+    print(f"🔍 Debug: frames dtype: {frames.dtype}, min/max: {frames.min():.3f}/{frames.max():.3f}")
     
-    # Normalize to 0-255
-    if frames.max() <= 1.0:
-        frames = (frames * 255).astype(np.uint8)
+    # HunyuanVideo format: (batch_size, num_frames, channels=3, height, width)
+    if len(frames.shape) == 5:  # [batch, num_frames, channels, height, width]
+        frames = frames[0]  # Take first batch: [num_frames, channels, height, width]
+        print(f"🔍 Debug: After batch selection: {frames.shape}")
+    
+    # Now we should have [num_frames, channels, height, width] -> [num_frames, height, width, channels]
+    if len(frames.shape) == 4 and frames.shape[1] == 3:  # [num_frames, 3, height, width]
+        frames = frames.transpose(0, 2, 3, 1)  # -> [num_frames, height, width, 3]
+        print(f"🔍 Debug: After transpose: {frames.shape}")
     else:
+        raise ValueError(f"Unexpected frame tensor shape: {frames.shape}")
+    
+    # Validate we have correct shape for OpenCV
+    if len(frames.shape) != 4 or frames.shape[3] != 3:
+        raise ValueError(f"Expected [num_frames, height, width, 3], got {frames.shape}")
+    
+    # Normalize to 0-255 range for OpenCV
+    if frames.dtype in [np.float32, np.float64]:
+        if frames.max() <= 1.0:
+            frames = (frames * 255).astype(np.uint8)
+        else:
+            frames = frames.astype(np.uint8)
+    elif frames.dtype != np.uint8:
         frames = frames.astype(np.uint8)
     
+    print(f"🔍 Debug: Final frames shape: {frames.shape}, dtype: {frames.dtype}")
+    
     height, width = frames.shape[1:3]
+    num_frames = frames.shape[0]
     
     # Create video writer
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
     
+    if not out.isOpened():
+        raise RuntimeError(f"Failed to open video writer for {output_path}")
+    
     # Write frames
-    for frame in frames:
-        # Convert RGB to BGR for OpenCV
+    for i, frame in enumerate(frames):
+        # Validate frame shape before OpenCV conversion
+        if frame.shape != (height, width, 3):
+            print(f"⚠️ Warning: Frame {i} has invalid shape {frame.shape}")
+            continue
+            
+        # Convert RGB to BGR for OpenCV (HunyuanVideo outputs RGB)
         frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         out.write(frame_bgr)
     
     out.release()
+    print(f"✅ Video saved: {output_path} ({num_frames} frames, {width}x{height})")
 
 # RunPod handler
 runpod.serverless.start({"handler": generate_video})
