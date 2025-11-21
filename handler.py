@@ -41,10 +41,10 @@ def load_models():
             from diffusers import HunyuanVideoPipeline
             
             # Load with PyTorch 2.5.1 compatible settings + memory optimization
-            print("📦 Loading model with memory optimization...")
+            print("📦 Loading model with fp16 precision (fixes black video issue)...")
             pipe = HunyuanVideoPipeline.from_pretrained(
                 "hunyuanvideo-community/HunyuanVideo",
-                torch_dtype=torch.bfloat16,  # Use bfloat16 for better compatibility
+                torch_dtype=torch.float16,  # Use fp16 to fix black video issue
                 device_map="auto",
                 trust_remote_code=True,
                 low_cpu_mem_usage=True,
