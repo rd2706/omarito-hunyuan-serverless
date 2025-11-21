@@ -38,23 +38,32 @@ def load_models():
             print(f"🧹 GPU memory cleared. Available: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
         
         try:
-            from diffusers import HunyuanVideoPipeline
+            from diffusers import HunyuanVideoPipeline, HunyuanVideoTransformer3DModel
             
-            # Load with PyTorch 2.5.1 compatible settings + memory optimization
-            print("📦 Loading model with fp16 precision (fixes black video issue)...")
+            # Load transformer with bfloat16 (research-backed solution)
+            print("📦 Loading transformer with bfloat16...")
+            transformer = HunyuanVideoTransformer3DModel.from_pretrained(
+                "hunyuanvideo-community/HunyuanVideo",
+                subfolder="transformer", 
+                torch_dtype=torch.bfloat16
+            )
+            
+            # Load pipeline with fp16 and the bfloat16 transformer
+            print("📦 Loading pipeline with proper precision settings...")
             pipe = HunyuanVideoPipeline.from_pretrained(
                 "hunyuanvideo-community/HunyuanVideo",
-                torch_dtype=torch.float16,  # Use fp16 to fix black video issue
-                device_map="auto",
+                transformer=transformer,
+                torch_dtype=torch.float16,
                 trust_remote_code=True,
                 low_cpu_mem_usage=True,
-                # Memory optimizations
-                variant="fp16",  # Use smaller variant if available
                 use_safetensors=True
             )
             
-            # Enable memory efficient attention
-            pipe.enable_attention_slicing(1)
+            # CRITICAL: Enable VAE tiling (main fix for black output)
+            pipe.vae.enable_tiling()
+            print("✅ VAE tiling enabled (fixes black video issue)")
+            
+            # Enable memory optimizations
             pipe.enable_model_cpu_offload()
             
             print("✅ HunyuanVideo loaded with memory optimization")
