@@ -43,7 +43,7 @@ def load_models():
             # Load transformer with bfloat16 (research-backed solution)
             print("📦 Loading transformer with bfloat16...")
             transformer = HunyuanVideoTransformer3DModel.from_pretrained(
-                "hunyuanvideo-community/HunyuanVideo",
+                "tencent/HunyuanVideo",
                 subfolder="transformer", 
                 torch_dtype=torch.bfloat16
             )
@@ -51,7 +51,7 @@ def load_models():
             # Load pipeline with fp16 and the bfloat16 transformer
             print("📦 Loading pipeline with proper precision settings...")
             pipe = HunyuanVideoPipeline.from_pretrained(
-                "hunyuanvideo-community/HunyuanVideo",
+                "tencent/HunyuanVideo",
                 transformer=transformer,
                 torch_dtype=torch.float16,
                 trust_remote_code=True,
