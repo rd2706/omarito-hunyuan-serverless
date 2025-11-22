@@ -38,6 +38,7 @@ def load_models():
             print(f"🧹 GPU memory cleared. Available: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
         
         try:
+            # Import diffusers components
             from diffusers import HunyuanVideoPipeline, HunyuanVideoTransformer3DModel
             
             # Load transformer with bfloat16 (research-backed solution)
@@ -72,6 +73,7 @@ def load_models():
             print(f"❌ Error loading HunyuanVideo: {e}")
             # Fallback with different precision
             try:
+                from diffusers import HunyuanVideoPipeline
                 print("🔄 Trying fallback with float16...")
                 pipe = HunyuanVideoPipeline.from_pretrained(
                     "hunyuanvideo-community/HunyuanVideo",
