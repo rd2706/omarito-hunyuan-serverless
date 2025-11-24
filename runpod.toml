@@ -23,8 +23,8 @@ python_executable = "python3"
 
 [resources]
 min_idle = 0
-max_idle = 1
-idle_timeout = 5
+max_idle = 2
+idle_timeout = 10
 max_concurrent_requests = 1
 
 [storage]
