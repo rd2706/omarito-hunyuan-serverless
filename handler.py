@@ -46,7 +46,8 @@ def load_models():
             transformer = HunyuanVideoTransformer3DModel.from_pretrained(
                 "tencent/HunyuanVideo",
                 subfolder="transformer", 
-                torch_dtype=torch.bfloat16
+                torch_dtype=torch.bfloat16,
+                revision="refs/pr/18"
             )
             
             # Load pipeline with fp16 and the bfloat16 transformer
@@ -54,7 +55,8 @@ def load_models():
             pipe = HunyuanVideoPipeline.from_pretrained(
                 "tencent/HunyuanVideo",
                 transformer=transformer,
-                torch_dtype=torch.float16
+                torch_dtype=torch.float16,
+                revision="refs/pr/18"
             )
             
             # CRITICAL: Enable VAE tiling (main fix for black output)
@@ -128,10 +130,9 @@ def generate_video(job):
             except:
                 print("⚠️ Using pipeline without adapter strength setting")
         
-        # Generate video
+        # Generate video (HunyuanVideo doesn't support negative_prompt)
         result = pipe(
             prompt=prompt,
-            negative_prompt=negative_prompt,
             num_inference_steps=num_inference_steps,
             guidance_scale=guidance_scale,
             height=height,
