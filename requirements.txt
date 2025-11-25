@@ -1,10 +1,11 @@
-# RESEARCHED COMPATIBLE VERSIONS: diffusers 0.32.0 needs transformers>4.41.2, HunyuanVideo works with 4.47.1  
+# WORKING SOLUTION FOUND: transformers 4.49.0 + peft 17.0 fixes modeling_layers error
 torch==2.5.1
 torchvision==0.20.1
 torchaudio==2.5.1
 xformers==0.0.29
 diffusers==0.32.0
-transformers==4.47.1
+transformers==4.49.0
+peft==17.0
 accelerate
 safetensors
 huggingface_hub
@@ -14,5 +15,4 @@ einops
 imageio
 av
 decord
-peft
 runpod
