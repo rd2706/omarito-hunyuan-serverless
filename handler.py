@@ -54,18 +54,15 @@ def load_models():
             pipe = HunyuanVideoPipeline.from_pretrained(
                 "tencent/HunyuanVideo",
                 transformer=transformer,
-                torch_dtype=torch.float16,
-                trust_remote_code=True,
-                low_cpu_mem_usage=True,
-                use_safetensors=True
+                torch_dtype=torch.float16
             )
             
             # CRITICAL: Enable VAE tiling (main fix for black output)
             pipe.vae.enable_tiling()
             print("✅ VAE tiling enabled (fixes black video issue)")
             
-            # Enable memory optimizations
-            pipe.enable_model_cpu_offload()
+            # Enable memory optimizations and move to CUDA
+            pipe.to("cuda")
             
             print("✅ HunyuanVideo loaded with memory optimization")
             
@@ -77,14 +74,10 @@ def load_models():
                 print("🔄 Trying fallback with float16...")
                 pipe = HunyuanVideoPipeline.from_pretrained(
                     "hunyuanvideo-community/HunyuanVideo",
-                    torch_dtype=torch.float16,
-                    trust_remote_code=True,
-                    low_cpu_mem_usage=True,
-                    use_safetensors=True
+                    torch_dtype=torch.float16
                 )
-                pipe.enable_attention_slicing(1)
-                pipe.enable_model_cpu_offload()
-                pipe = pipe.to("cuda")
+                pipe.vae.enable_tiling()
+                pipe.to("cuda")
                 print("✅ HunyuanVideo loaded (float16 fallback)")
             except Exception as e2:
                 print(f"❌ All fallbacks failed: {e2}")
